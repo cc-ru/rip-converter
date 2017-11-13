@@ -81,6 +81,7 @@ impl DFPWM {
                 self.ctx_update(cur_bit);
             }
             dest[dest_offs] = d as u8;
+            dest_offs += 1;
         }
     }
 }
