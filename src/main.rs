@@ -3,9 +3,11 @@ extern crate lewton;
 
 mod dfpwm;
 
+use std::fs::File;
 use std::path::{Path, PathBuf};
 
 use clap::{App, Arg};
+use lewton::inside_ogg::OggStreamReader;
 
 fn main() {
     let matches = App::new("rip-converter")
@@ -49,10 +51,12 @@ fn main() {
                         .map_or("ogg", |x| x.to_str().unwrap()));
 
     match format {
-        "ogg" => {},
+        "ogg" => {
+            let f = File::open(input).unwrap();
+            let mut ogg = OggStreamReader::new(f).unwrap();
+
+            println!("Sample rate: {}", ogg.ident_hdr.audio_sample_rate);
+        },
         _ => panic!("Unsupported input file format: {}", format),
     }
-
-    println!("Proceeding with input={}, output={}, format={}",
-             input.display(), output.display(), format);
 }
