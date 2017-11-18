@@ -3,7 +3,7 @@ const RESP_DEC: i32 = 1;
 const RESP_PREC: i32 = 10;
 const LPF_STRENGTH: i32 = 140;
 
-struct DFPWM {
+pub struct DFPWM {
     response: i32,
     level: i32,
     last_bit: bool,
@@ -12,7 +12,7 @@ struct DFPWM {
 }
 
 impl DFPWM {
-    fn new() -> DFPWM {
+    pub fn new() -> DFPWM {
         DFPWM {
             response: 0,
             level: 0,
@@ -62,8 +62,8 @@ impl DFPWM {
         self.level = nlevel;
     }
 
-    fn compress(&mut self, src: &mut Vec<u8>, dest: &mut Vec<u8>,
-                mut src_offs: usize, mut dest_offs: usize, len: usize) {
+    pub fn compress(&mut self, src: &Vec<u8>, dest: &mut Vec<u8>,
+                    mut src_offs: usize, mut dest_offs: usize, len: usize) {
         for _ in 0..len {
             let mut d = 0;
 

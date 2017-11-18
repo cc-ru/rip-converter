@@ -4,5 +4,9 @@ version = "0.1.0"
 authors = ["Fingercomp <fingercomp@users.noreply.github.com>"]
 
 [dependencies]
-lewton = "0.7.0"
 clap = "2.27.1"
+tempfile = "2.2.0"
+
+[dependencies.ffmpeg]
+# git = "https://github.com/meh/rust-ffmpeg.git"
+git = "https://github.com/pornel/rust-ffmpeg.git"
