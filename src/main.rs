@@ -9,6 +9,7 @@ mod rip;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use clap::{App, Arg};
 use ffmpeg::{format, media, frame};
@@ -125,16 +126,18 @@ fn main() {
     let mut temp_file = tempfile::NamedTempFile::new().unwrap();
     println!("Created a temporary file at {}", temp_file.path().to_str().unwrap());
 
-    {
-        ffmpeg::init().unwrap();
+    ffmpeg::init().unwrap();
 
-        let mut input_context = format::input(&input_path).unwrap();
+    let mut input_context = format::input(&input_path).unwrap();
+
+    {
         let temp_path = temp_file.path();
         let mut output_context = format::output_as(&temp_path, "s8").unwrap();
 
         let mut transcoder = get_transcoder(&mut input_context, &mut output_context).unwrap();
 
-        println!("Created a transcoder instance");
+        println!("Transcoding to PCM (signed 8-bit)...");
+        let now = Instant::now();
 
         output_context.write_header().unwrap();
 
@@ -182,22 +185,29 @@ fn main() {
         }
 
         output_context.write_trailer().unwrap();
-        println!("Encoded to PCM_S8");
+
+        println!("Done (in {}.{:2} s)", now.elapsed().as_secs(), now.elapsed().subsec_nanos() / 10_000_000);
     }
 
     // Now we can finally convert PCM to DFPWM
     let mut pcm_bytes = Vec::<u8>::new();
     temp_file.read_to_end(&mut pcm_bytes).unwrap();
     temp_file.close().unwrap();
-    println!("Read the PCM bytes");
     let mut dfpwm_compressor = DFPWM::new();
-    println!("Created a DFPWM compressor instance");
+    println!("Compressing to DFPWM...");
+    let now = Instant::now();
     let mut dfpwm_bytes = Vec::<u8>::new();
     dfpwm_compressor.compress(&pcm_bytes, &mut dfpwm_bytes);
-    println!("Compressed to DFPWM");
+    println!("Done (in {}.{:2} s)", now.elapsed().as_secs(), now.elapsed().subsec_nanos() / 10_000_000);
 
     let mut out_file = File::create(output_path).unwrap();
-    rip::write_rip(&mut out_file, &dfpwm_bytes);
+    println!("Metadata (best stream used):");
+    let stream = input_context.streams().best(media::Type::Audio).unwrap();
+    let metadata = stream.metadata();
+    println!("  - Title: {}", metadata.get("title").unwrap_or(""));
+    println!("  - Artist: {}", metadata.get("artist").unwrap_or(""));
+    println!("  - Album: {}", metadata.get("album").unwrap_or(""));
+    rip::write_rip(&mut out_file, &dfpwm_bytes, &metadata);
     out_file.flush().unwrap();
 
     println!("Successfully converted to {}", output_path.to_str().unwrap());
