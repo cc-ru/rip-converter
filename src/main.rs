@@ -95,7 +95,7 @@ fn get_transcoder(input_context: &mut format::context::Input,
 
 fn main() {
     let matches = App::new("rip-converter")
-        .about("Converts an Ogg/Vorbis file to a .rip container with DFPWM codec")
+        .about("Converts audio files to a .rip container with DFPWM codec")
         .arg(Arg::with_name("input")
             .value_name("INPUT")
             .help("Input file")
