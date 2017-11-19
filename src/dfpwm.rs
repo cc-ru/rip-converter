@@ -1,4 +1,4 @@
-const RESP_PREC: i32 = 10;
+const RESP_PREC: i8 = 10;
 
 pub struct DFPWM {
     response: i32,
@@ -45,8 +45,8 @@ impl DFPWM {
         }
 
         if RESP_PREC > 8 {
-            if nresponse < 2 << (RESP_PREC - 8) {
-                nresponse = 2 << (RESP_PREC - 8);
+            if nresponse < 1 + (1 << (RESP_PREC - 8)) {
+                nresponse = 1 + (1 << (RESP_PREC - 8));
             }
         }
 
@@ -56,17 +56,24 @@ impl DFPWM {
     }
 
     pub fn compress(&mut self, src: &Vec<u8>, dest: &mut Vec<u8>) {
-        let mut src_offset: usize = 0;
-        let mut dest_offset: usize = 0;
-        for _ in 0..src.len() {
-            let mut d = 0;
+        let len = src.len();
+        for i in 0..(len / 8) {
+            let mut d = 0u8;
 
-            for _ in 0..8 {
-                let in_level = src[src_offset] as i32;
-                src_offset += 1;
+            for j in 0..8 {
+                let index = i * 8 + j;
+                if index % 65535 == 0 {
+                    println!("Processing byte {} out of {} ({:6.2}%)...",
+                             index, len, (index as f64) / (len as f64) * 100f64);
+                }
+                let in_level = if index < len {
+                    src[index] as i8
+                } else {
+                    0i8
+                };
 
-                let cur_bit = in_level > self.level ||
-                              in_level == self.level && self.level == 127;
+                let cur_bit = !((in_level as i32) < self.level ||
+                    ((in_level as i32) == -128));
                 d >>= 1;
                 d += match cur_bit {
                     true => 128,
@@ -74,8 +81,7 @@ impl DFPWM {
                 };
                 self.ctx_update(cur_bit);
             }
-            dest[dest_offset] = d as u8;
-            dest_offset += 1;
+            dest.push(d);
         }
     }
 }
