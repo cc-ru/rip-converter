@@ -1,14 +1,9 @@
-const RESP_INC: i32 = 1;
-const RESP_DEC: i32 = 1;
 const RESP_PREC: i32 = 10;
-const LPF_STRENGTH: i32 = 140;
 
 pub struct DFPWM {
     response: i32,
     level: i32,
     last_bit: bool,
-    last_level: i32,
-    lpf_level: i32,
 }
 
 impl DFPWM {
@@ -17,8 +12,6 @@ impl DFPWM {
             response: 0,
             level: 0,
             last_bit: false,
-            last_level: 0,
-            lpf_level: 0,
         }
     }
 
@@ -62,14 +55,15 @@ impl DFPWM {
         self.level = nlevel;
     }
 
-    pub fn compress(&mut self, src: &Vec<u8>, dest: &mut Vec<u8>,
-                    mut src_offs: usize, mut dest_offs: usize, len: usize) {
-        for _ in 0..len {
+    pub fn compress(&mut self, src: &Vec<u8>, dest: &mut Vec<u8>) {
+        let mut src_offset: usize = 0;
+        let mut dest_offset: usize = 0;
+        for _ in 0..src.len() {
             let mut d = 0;
 
             for _ in 0..8 {
-                let in_level = src[src_offs] as i32;
-                src_offs += 1;
+                let in_level = src[src_offset] as i32;
+                src_offset += 1;
 
                 let cur_bit = in_level > self.level ||
                               in_level == self.level && self.level == 127;
@@ -80,8 +74,8 @@ impl DFPWM {
                 };
                 self.ctx_update(cur_bit);
             }
-            dest[dest_offs] = d as u8;
-            dest_offs += 1;
+            dest[dest_offset] = d as u8;
+            dest_offset += 1;
         }
     }
 }
