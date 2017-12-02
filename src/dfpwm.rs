@@ -59,6 +59,7 @@ impl DFPWM {
 
     pub fn compress(&mut self, src: &Vec<u8>, dest: &mut Vec<u8>) {
         let len = src.len();
+        dest.reserve(len);
         let mut now = Instant::now();
         for i in 0..(len / 8) {
             let mut d = 0u8;

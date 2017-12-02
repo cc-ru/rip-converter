@@ -15,6 +15,7 @@ use clap::{App, Arg};
 use ffmpeg::{format, media, frame};
 
 use dfpwm::DFPWM;
+use rip::TrackMetadata;
 
 // Borrowed from https://github.com/meh/rust-ffmpeg/blob/master/examples/transcode-audio.rs
 fn get_filter(spec: &str, decoder: &ffmpeg::codec::decoder::Audio,
@@ -186,7 +187,7 @@ fn main() {
 
         output_context.write_trailer().unwrap();
 
-        println!("Done (in {}.{:2} s)", now.elapsed().as_secs(), now.elapsed().subsec_nanos() / 10_000_000);
+        println!("Done (in {}.{:02} s)", now.elapsed().as_secs(), now.elapsed().subsec_nanos() / 10_000_000);
     }
 
     // Now we can finally convert PCM to DFPWM
@@ -198,15 +199,24 @@ fn main() {
     let now = Instant::now();
     let mut dfpwm_bytes = Vec::<u8>::new();
     dfpwm_compressor.compress(&pcm_bytes, &mut dfpwm_bytes);
-    println!("Done (in {}.{:2} s)", now.elapsed().as_secs(), now.elapsed().subsec_nanos() / 10_000_000);
+    println!("Done (in {}.{:02} s)", now.elapsed().as_secs(), now.elapsed().subsec_nanos() / 10_000_000);
 
     let mut out_file = File::create(output_path).unwrap();
-    println!("Metadata (best stream used):");
+
+    let track_meta = input_context.metadata();
     let stream = input_context.streams().best(media::Type::Audio).unwrap();
-    let metadata = stream.metadata();
-    println!("  - Title: {}", metadata.get("title").unwrap_or(""));
-    println!("  - Artist: {}", metadata.get("artist").unwrap_or(""));
-    println!("  - Album: {}", metadata.get("album").unwrap_or(""));
+    let stream_meta = stream.metadata();
+
+    let metadata = TrackMetadata {
+        title: track_meta.get("title").or_else(|| stream_meta.get("title")).map(|x| String::from(x)),
+        artist: track_meta.get("artist").or_else(|| stream_meta.get("artist")).map(|x| String::from(x)),
+        album: track_meta.get("album").or_else(|| stream_meta.get("album")).map(|x| String::from(x)),
+    };
+    println!("Metadata:");
+    println!("  - Track: {}", metadata.title.as_ref().map_or("unset", |x| x.as_str()));
+    println!("  - Artist: {}", metadata.artist.as_ref().map_or("unset", |x| x.as_str()));
+    println!("  - Album: {}", metadata.album.as_ref().map_or("unset", |x| x.as_str()));
+
     rip::write_rip(&mut out_file, &dfpwm_bytes, &metadata);
     out_file.flush().unwrap();
 

@@ -1,6 +1,6 @@
 [package]
 name = "rip_converter"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Fingercomp <fingercomp@users.noreply.github.com>"]
 
 [dependencies]
@@ -9,5 +9,4 @@ tempfile = "2.2.0"
 byteorder = "1.1.0"
 
 [dependencies.ffmpeg]
-# git = "https://github.com/meh/rust-ffmpeg.git"
-git = "https://github.com/pornel/rust-ffmpeg.git"
+git = "https://github.com/meh/rust-ffmpeg.git"
