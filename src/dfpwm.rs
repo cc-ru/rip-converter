@@ -1,5 +1,3 @@
-use std::time::{Instant, Duration};
-
 const RESP_PREC: i8 = 10;
 
 pub struct DFPWM {
@@ -60,17 +58,11 @@ impl DFPWM {
     pub fn compress(&mut self, src: &Vec<u8>, dest: &mut Vec<u8>) {
         let len = src.len();
         dest.reserve(len);
-        let mut now = Instant::now();
         for i in 0..(len / 8) {
             let mut d = 0u8;
 
             for j in 0..8 {
                 let index = i * 8 + j;
-                if now.elapsed() > Duration::new(1, 0) {
-                    println!("Processing byte {} out of {} ({:6.2}%)...",
-                             index, len, (index as f64) / (len as f64) * 100f64);
-                    now = Instant::now();
-                }
                 let in_level = if index < len {
                     src[index] as i8
                 } else {

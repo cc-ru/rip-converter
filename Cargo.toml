@@ -1,6 +1,6 @@
 [package]
 name = "rip_converter"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Fingercomp <fingercomp@users.noreply.github.com>"]
 
 [dependencies]
