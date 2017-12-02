@@ -57,7 +57,8 @@ struct Transcoder {
 }
 
 fn get_transcoder(input_context: &mut format::context::Input,
-                  output_context: &mut format::context::Output) -> Result<Transcoder, ffmpeg::Error> {
+                  output_context: &mut format::context::Output,
+                  normalize: bool) -> Result<Transcoder, ffmpeg::Error> {
     let input = input_context.streams().best(media::Type::Audio)
         .expect("Couldn't find the best audio stream");
     let mut decoder = input.codec().decoder().audio().unwrap();
@@ -84,7 +85,9 @@ fn get_transcoder(input_context: &mut format::context::Input,
     let encoder = encoder.open_as(codec).unwrap();
     output.set_parameters(&encoder);
 
-    let filter = get_filter("anull", &decoder, &encoder).unwrap();
+    let filter_spec = if normalize { "loudnorm" } else { "anull" };
+
+    let filter = get_filter(filter_spec, &decoder, &encoder).unwrap();
 
     Ok(Transcoder {
         decoder,
@@ -97,6 +100,10 @@ fn get_transcoder(input_context: &mut format::context::Input,
 fn main() {
     let matches = App::new("rip-converter")
         .about("Converts audio files to a .rip container with DFPWM codec")
+        .arg(Arg::with_name("normalize")
+            .short("n")
+            .long("normalize")
+            .help("Normalizes the volume of the track"))
         .arg(Arg::with_name("input")
             .value_name("INPUT")
             .help("Input file")
@@ -124,6 +131,8 @@ fn main() {
         panic!("Output is a directory.");
     }
 
+    let normalize = matches.is_present("normalize");
+
     let mut temp_file = tempfile::NamedTempFile::new().unwrap();
     println!("Created a temporary file at {}", temp_file.path().to_str().unwrap());
 
@@ -135,9 +144,13 @@ fn main() {
         let temp_path = temp_file.path();
         let mut output_context = format::output_as(&temp_path, "s8").unwrap();
 
-        let mut transcoder = get_transcoder(&mut input_context, &mut output_context).unwrap();
+        let mut transcoder = get_transcoder(&mut input_context, &mut output_context, normalize).unwrap();
 
-        println!("Transcoding to PCM (signed 8-bit)...");
+        println!("Transcoding to PCM (signed 8-bit{})...", if normalize {
+            "; normalized"
+        } else {
+            ""
+        });
         let now = Instant::now();
 
         output_context.write_header().unwrap();
